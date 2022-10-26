@@ -37,7 +37,3 @@ def knight(square, owned_pieces=owned_pieces):
         possible_moves.append(square-6)
 
     return possible_moves
-
-
-while True:
-    print(knight(int(input())))

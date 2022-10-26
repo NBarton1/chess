@@ -68,7 +68,3 @@ def bishop(square, pieces=pieces, owned_pieces=owned_pieces):
         possible_moves.remove(square)
 
     return possible_moves
-
-
-while True:
-    print(bishop(int(input())))

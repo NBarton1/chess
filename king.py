@@ -33,7 +33,3 @@ def king(square, owned_pieces=owned_pieces):
         possible_moves.append(square-7)
 
     return possible_moves
-
-
-while True:
-    print(king(int(input())))

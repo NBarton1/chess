@@ -1,5 +1,5 @@
-pieces = [1,8,9]
-owned_pieces = [1,8,9]
+pieces = []
+owned_pieces = []
 
 
 def rook(square, pieces=pieces, owned_pieces=owned_pieces):
@@ -68,7 +68,3 @@ def rook(square, pieces=pieces, owned_pieces=owned_pieces):
         possible_moves.remove(square)
 
     return possible_moves
-
-
-while True:
-    print(rook(int(input())))
