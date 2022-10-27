@@ -37,3 +37,23 @@ def knight(square, owned_pieces=owned_pieces):
         possible_moves.append(square-6)
 
     return possible_moves
+
+
+def knight_move(square, pieces=owned_pieces):
+    # list containing all possible changes in movement
+    delta = [-6, 6, -10, 10, -15, 15, -17, 17]
+    possible_moves = []
+
+    # loop through all changes
+    for d in delta:
+        # calculate the new square
+        new_square = square + d
+
+        # determine if new_square is legal, absolute difference between new_square % 8 and square % 8 must be 2 or 1
+        if -1 < new_square < 64 and abs(square % 8 - new_square % 8) - 1 >> 1 == 0 and new_square not in pieces:
+            possible_moves.append(new_square)
+
+    return possible_moves
+
+
+print(knight_move(32))

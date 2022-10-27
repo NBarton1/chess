@@ -33,3 +33,23 @@ def king(square, owned_pieces=owned_pieces):
         possible_moves.append(square-7)
 
     return possible_moves
+
+
+def king_move(square, pieces=owned_pieces):
+    # list containing all possible changes in movement
+    delta = [-1, 1, -7, 7, -8, 8, -9, 9]
+    possible_moves = []
+
+    # loop through all changes
+    for d in delta:
+        # calculate the new square
+        new_square = square + d
+
+        # determine if new_square is legal, absolute difference between new_square % 8 and square % 8 must be 1 or 0
+        if -1 < new_square < 64 and abs(square % 8 - new_square % 8) >> 1 == 0 and new_square not in pieces:
+            possible_moves.append(new_square)
+
+    return possible_moves
+
+
+print(king_move(55))
