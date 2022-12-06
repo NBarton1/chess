@@ -1,7 +1,4 @@
-# Lists of pieces
-white_pieces = {"wk": 7}
-black_pieces = {"bp": 15}
-pieces = white_pieces | black_pieces
+import tkinter as tk
 
 
 # Takes dictionary of pieces and converts to list of squares occupied
@@ -13,7 +10,7 @@ def get_squares(pieces):
 
 
 # Creates set of possible moves for the queen
-def queen(square, owned_pieces_squares, pieces_squares=get_squares(pieces)):
+def queen(square, owned_pieces_squares, pieces_squares):
 
     # Necessary variables
     rank = (square // 8) + 1
@@ -127,8 +124,7 @@ def king(square, owned_pieces_squares):
         new_square = square + d
 
         # Determine if new_square is legal, absolute difference between new_square % 8 and square % 8 must be 1 or 0
-        if -1 < new_square < 64 and abs(
-                square % 8 - new_square % 8) >> 1 == 0 and new_square not in owned_pieces_squares:
+        if -1 < new_square < 64 and abs(square % 8 - new_square % 8) >> 1 == 0 and new_square not in owned_pieces_squares:
             possible_moves.add(new_square)
 
     return possible_moves
@@ -148,15 +144,14 @@ def knight(square, owned_pieces_squares):
         new_square = square + d
 
         # Determine if new_square is legal, absolute difference between new_square % 8 and square % 8 must be 2 or 1
-        if -1 < new_square < 64 and abs(
-                square % 8 - new_square % 8) - 1 >> 1 == 0 and new_square not in owned_pieces_squares:
+        if -1 < new_square < 64 and abs(square % 8 - new_square % 8) - 1 >> 1 == 0 and new_square not in owned_pieces_squares:
             possible_moves.add(new_square)
 
     return possible_moves
 
 
 # Creates set of possible moves for the rook
-def rook(square, owned_pieces_squares, pieces_squares=get_squares(pieces)):
+def rook(square, owned_pieces_squares, pieces_squares):
 
     # Necessary variables
     rank = (square // 8) + 1
@@ -215,7 +210,7 @@ def rook(square, owned_pieces_squares, pieces_squares=get_squares(pieces)):
 
 
 # Creates set of possible moves for the bishop
-def bishop(square, owned_pieces_squares, pieces_squares=get_squares(pieces)):
+def bishop(square, owned_pieces_squares, pieces_squares):
 
     # Necessary variables
     rank = (square // 8) + 1
@@ -329,15 +324,194 @@ def check(square, owned_pieces, unowned_pieces, pieces, other_color):
 
     if square in opponent_moves:
         return True
+    return False
+
+
+# Determines whether a check is checkmate
+def checkmate(owned_pieces, unowned_pieces, pieces, color):
+    other_color = "w"
+    if color == "w":
+        other_color = "b"
+
+    og_owned_pieces = dict(owned_pieces)
+    og_unowned_pieces = dict(unowned_pieces)
+    og_pieces = dict(pieces)
+
+    for piece in owned_pieces:
+
+        if piece[1] == "p":
+            moves = pawn(pieces[piece], get_squares(unowned_pieces), get_squares(pieces), "w")
+        elif piece[1] == "n":
+            moves = knight(pieces[piece], get_squares(owned_pieces))
+        elif piece[1] == "b":
+            moves = bishop(pieces[piece], get_squares(owned_pieces), get_squares(pieces))
+        elif piece[1] == "r":
+            moves = rook(pieces[piece], get_squares(owned_pieces), get_squares(pieces))
+        elif piece[1] == "q":
+            moves = queen(pieces[piece], get_squares(owned_pieces), get_squares(pieces))
+        else:
+            moves = king(pieces[piece], get_squares(owned_pieces))
+
+        for move in moves:
+            extract = move_piece(pieces[piece], move, owned_pieces, unowned_pieces)
+            owned_pieces = extract[0]
+            unowned_pieces = extract[1]
+            pieces = extract[2]
+
+            if not check(pieces[color+"k"], owned_pieces, unowned_pieces, pieces, other_color):
+                return False
+
+            owned_pieces = dict(og_owned_pieces)
+            unowned_pieces = dict(og_unowned_pieces)
+            pieces = dict(og_pieces)
+
+    return True
+
+
+# Does a designated move and does necessary captures
+def move_piece(square, new_square, owned_pieces, unowned_pieces):
+    captured = "none"
+    piece = "none"
+    for try_piece in owned_pieces:
+        if owned_pieces[try_piece] == square:
+            piece = try_piece
+
+    if piece != "none":
+        owned_pieces[piece] = new_square
+
+        for try_piece in unowned_pieces:
+            if unowned_pieces[try_piece] == new_square:
+                captured = try_piece
+
+        if captured != "none":
+            unowned_pieces.pop(captured)
+
+        return [dict(owned_pieces), dict(unowned_pieces), dict(owned_pieces | unowned_pieces)]
+
+
+def game(board, square):
+
+    color = "b"
+    owned_pieces = dict(board.black_pieces)
+    unowned_pieces = dict(board.white_pieces)
+    if board.white_turn:
+        color = "w"
+        owned_pieces = dict(board.white_pieces)
+        unowned_pieces = dict(board.black_pieces)
+
+    if not board.select:
+        piece = "none"
+        for try_piece in owned_pieces:
+            if owned_pieces[try_piece] == square:
+                piece = try_piece
+
+        if piece != "none":
+            board.select = not board.select
+            possible_moves = set()
+            if piece[1] == "p":
+                possible_moves.update(pawn(board.pieces[piece], get_squares(unowned_pieces), get_squares(board.pieces), color))
+            elif piece[1] == "n":
+                possible_moves.update(knight(board.pieces[piece], get_squares(owned_pieces)))
+            elif piece[1] == "b":
+                possible_moves.update(bishop(board.pieces[piece], get_squares(owned_pieces), get_squares(board.pieces)))
+            elif piece[1] == "r":
+                possible_moves.update(rook(board.pieces[piece], get_squares(owned_pieces), get_squares(board.pieces)))
+            elif piece[1] == "q":
+                possible_moves.update(queen(board.pieces[piece], get_squares(owned_pieces), get_squares(board.pieces)))
+            elif piece[1] == "k":
+                possible_moves.update(king(board.pieces[piece], get_squares(owned_pieces)))
+            board.moves = [square, possible_moves]
+
     else:
-        return False
+        board.select = not board.select
+        if square in board.moves[1]:
+            extract = move_piece(board.moves[0], square, dict(owned_pieces), dict(unowned_pieces))
+            if not check(extract[0][color + "k"], extract[0], extract[1], extract[2], "w" if color == "b" else "b"):
+                board.white_turn = not board.white_turn
+                extract = move_piece(board.moves[0], square, owned_pieces, unowned_pieces)
+
+                if color == "w":
+                    board.white_pieces = extract[0]
+                    board.black_pieces = extract[1]
+                else:
+                    board.black_pieces = extract[0]
+                    board.white_pieces = extract[1]
+                board.pieces = extract[2]
+                board.update_board()
 
 
-# 56 57 58 59 60 61 62 63
-# 48 49 50 51 52 53 54 55
-# 40 41 42 43 44 45 46 47
-# 32 33 34 35 36 37 38 39
-# 24 25 26 27 28 29 30 31
-# 16 17 18 19 20 21 22 23
-# 08 09 10 11 12 13 14 15
-# 00 01 02 03 04 05 06 07
+class boardGUI:
+
+    def __init__(self):
+
+        board = tk.Tk()
+        board.title("Chess")
+        board.geometry("600x500")
+        buttonframe = tk.Frame(board)
+        for i in range(8):
+            buttonframe.columnconfigure(i, weight=1)
+
+        self.white_pieces = {"wp1": 8, "wp2": 9, "wp3": 10, "wp4": 11, "wp5": 12, "wp6": 13, "wp7": 14, "wp8": 15, "wr1": 0, "wr2": 7, "wn1": 1, "wn2": 6, "wb1": 2, "wb2": 5, "wq1": 3, "wk": 4}
+        self.black_pieces = {"bp1": 48, "bp2": 49, "bp3": 50, "bp4": 51, "bp5": 52, "bp6": 53, "bp7": 54, "bp8": 55, "br1": 56, "br2": 63, "bn1": 57, "bn2": 62, "bb1": 58, "bb2": 61, "bq1": 59, "bk": 60}
+        self.pieces = self.white_pieces | self.black_pieces
+
+        self.white_turn = True
+        self.select = False
+
+        self.moves = [-1, set()]
+
+        self.buttons = []
+        for y in range(8):
+            for x in range(8):
+                color = "#d4d4d4"
+                if abs(x-y)%2 == 0:
+                    color = "#f2f2f2"
+                square = 8*y+x
+                btn = tk.Button(buttonframe, text=str(square), font=("Arial", 16), bg=color, command=lambda square=square: game(self, square))
+                self.buttons.append(btn)
+                btn.grid(row=7 - y, column=x, sticky="we")
+        self.update_board()
+        buttonframe.pack(pady=50)
+
+        board.mainloop()
+
+
+    def update_board(self):
+        for i, button in enumerate(self.buttons):
+            piece = ""
+            for try_piece in self.pieces:
+                if self.pieces[try_piece] == i:
+                    piece = try_piece
+
+            match piece[:2]:
+                case "wp":
+                    button["text"] = "♙"
+                case "wr":
+                    button["text"] = "♖"
+                case "wn":
+                    button["text"] = "♘"
+                case "wb":
+                    button["text"] = "♗"
+                case "wq":
+                    button["text"] = "♕"
+                case "wk":
+                    button["text"] = "♔"
+
+                case "bp":
+                    button["text"] = "♟"
+                case "br":
+                    button["text"] = "♜"
+                case "bn":
+                    button["text"] = "♞"
+                case "bb":
+                    button["text"] = "♝"
+                case "bq":
+                    button["text"] = "♛"
+                case "bk":
+                    button["text"] = "♚"
+
+                case _:
+                    button["text"] = "    "
+
+
+boardGUI()
